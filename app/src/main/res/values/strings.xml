@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Only Office App</string>
+    <string name="entry_title">Connect to ONLYOFFICE</string>
+    <string name="portal_name_placeholder">Portalname</string>
+    <string name="email_placeholder">E-mail</string>
+    <string name="password_placeholder">Password</string>
+    <string name="login">Login</string>
+    <string name="documents_title">Documents</string>
+    <string name="rooms_title">Rooms</string>
+    <string name="trash_title">Trash</string>
+    <string name="profile_title">Profile</string>
+    <string name="untitled_folder">Untitled folder</string>
+    <string name="untitled_file">Untitled file</string>
+    <string name="logout">Logout</string>
+    <string name="empty_folder_placeholder">This folder is empty!</string>
+    <string name="empty_room_placeholder">This room is empty!</string>
+</resources>
