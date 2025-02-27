@@ -170,9 +170,7 @@ private class OfficeApiImpl : OfficeApi {
         progressListener: ProgressListener?
     ): RemoteDocumentsData {
         return getSpecifiedFileSection(
-            lastPathSection = "@my",
-            requestData = requestData,
-            progressListener = progressListener
+            "@my", requestData = requestData, progressListener = progressListener
         )
     }
 
@@ -181,30 +179,9 @@ private class OfficeApiImpl : OfficeApi {
         requestData: AuthenticatedRequestData,
         progressListener: ((Float) -> Unit)?
     ): RemoteDocumentsData {
-        val contentType = ContentType.Application.Json
-        val json = Json { ignoreUnknownKeys = true }
-
-        getHttpClient(contentType).use { client ->
-            val response = client.get {
-                url {
-                    applyBaseUrlFromPortal(requestData.portal)
-                    appendPathSegments("api", "2.0", "files", "rooms")
-                }
-                bearerAuth(token = requestData.token)
-                accept(contentType)
-                progressListener?.let { setProgressListener(onUpload = false, listener = it) }
-            }
-
-            if (response.status.isSuccess().not()) {
-                throw Exception("${response.status.value}. ${response.status.description}")
-            }
-
-            val responseBody = response.bodyAsText()
-            val responseJson = json.parseToJsonElement(responseBody) as JsonObject
-            return responseJson["response"]
-                ?.let(json::decodeFromJsonElement)
-                ?: throw Exceptions.getUnexpectedResponseException(responseBody)
-        }
+        return getSpecifiedFileSection(
+            "rooms", requestData = requestData, progressListener = progressListener
+        )
     }
 
 
@@ -213,9 +190,7 @@ private class OfficeApiImpl : OfficeApi {
         progressListener: ((Float) -> Unit)?
     ): RemoteDocumentsData {
         return getSpecifiedFileSection(
-            lastPathSection = "@trash",
-            requestData = requestData,
-            progressListener = progressListener
+            "@trash", requestData = requestData, progressListener = progressListener
         )
     }
 
@@ -226,9 +201,7 @@ private class OfficeApiImpl : OfficeApi {
         progressListener: ProgressListener?
     ): RemoteDocumentsData {
         return getSpecifiedFileSection(
-            lastPathSection = folderId.toString(),
-            requestData = requestData,
-            progressListener = progressListener
+            folderId.toString(), requestData = requestData, progressListener = progressListener
         )
     }
 
@@ -289,11 +262,11 @@ private class OfficeApiImpl : OfficeApi {
     }
 
 
-    private suspend fun getSpecifiedFileSection(
-        lastPathSection: String,
+    private suspend inline fun <reified T> getSpecifiedFileSection(
+        vararg lastPathSections: String,
         requestData: AuthenticatedRequestData,
-        progressListener: ProgressListener?
-    ): RemoteDocumentsData {
+        noinline progressListener: ProgressListener?
+    ): T {
         val contentType = ContentType.Application.Json
         val json = Json { ignoreUnknownKeys = true }
 
@@ -301,7 +274,8 @@ private class OfficeApiImpl : OfficeApi {
             val response = client.get {
                 url {
                     applyBaseUrlFromPortal(requestData.portal)
-                    appendPathSegments("api", "2.0", "files", lastPathSection)
+                    appendPathSegments("api", "2.0", "files")
+                    appendPathSegments(components = lastPathSections)
                 }
                 bearerAuth(token = requestData.token)
                 accept(contentType)

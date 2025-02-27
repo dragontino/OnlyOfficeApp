@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RemoteFile(
     val id: Int,
-    val title: String,
+    val title: String?,
     val folderId: Int,
     val fileType: Int,
     @SerialName("fileExst")
