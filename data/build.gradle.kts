@@ -1,3 +1,6 @@
+import java.util.Properties
+import kotlin.apply
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -14,7 +17,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
 
-        val dataStoreKeyAlias = properties["datastore-keyalias"]
+        val dataStoreKeyAlias = Properties()
+            .apply { project.rootProject.file("local.properties").inputStream().let(::load) }
+            .getProperty("datastore-keyalias", "")
         buildConfigField("String", "DataStoreKeyAlias", "\"$dataStoreKeyAlias\"")
     }
 
