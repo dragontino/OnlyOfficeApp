@@ -147,8 +147,7 @@ fun DocumentsScreen(
                             start = contentPadding.calculateStartPadding(layoutDirection),
                             end = contentPadding.calculateEndPadding(layoutDirection)
                         ),
-                        onClickToFolder = viewModel::openChildFolder,
-                        onClickToFile = viewModel::openFile
+                        onClickToFolder = viewModel::openChildFolder
                     )
                 }
             }

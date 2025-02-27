@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Dataset
 import androidx.compose.material.icons.outlined.Delete
@@ -29,13 +28,11 @@ import androidx.compose.material.icons.rounded.Dataset
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -55,9 +52,9 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.onlyoffice.app.R
@@ -69,8 +66,8 @@ import com.onlyoffice.app.ui.screens.main.trash.TrashScreen
 import com.onlyoffice.app.ui.theme.RobotoFont
 import com.onlyoffice.app.util.AnimationConstants
 import com.onlyoffice.app.util.AppBarDefaults
+import com.onlyoffice.app.util.TwoRowsSnackbar
 import com.onlyoffice.app.util.createAnimationSpec
-import com.onlyoffice.app.util.reversed
 
 val LocalBottomNavigationBarHeight = compositionLocalOf {
     0.dp
@@ -79,7 +76,9 @@ val LocalBottomNavigationBarHeight = compositionLocalOf {
 @Composable
 fun NavigationScreen(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
-    val currentBackStackEntry = navController.currentBackStackEntryAsState()
+    val currentBackStackEntry = navController
+        .currentBackStackEntryFlow
+        .collectAsStateWithLifecycle(initialValue = null)
     val selectedBottomBarItem = remember {
         derivedStateOf {
             listOf(
@@ -88,7 +87,7 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
                 BottomBarItem.Trash,
                 BottomBarItem.Profile
             ).find {
-                currentBackStackEntry.value?.destination?.route == it.destination.name
+                currentBackStackEntry.value?.destination?.route == it.destination.route
             } ?: BottomBarItem.Documents
         }
     }
@@ -97,59 +96,34 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
 
     Scaffold(
         bottomBar = {
-            AnimatedVisibility(
-                visible = NavDestinations.entries.any {
-                    it != NavDestinations.Entry && with(currentBackStackEntry) {
-                        value?.destination?.route == null || value?.destination?.route == it.name
-                    }
-                },
-                enter = expandVertically(createAnimationSpec()),
-                exit = shrinkVertically(
-                    animationSpec = createAnimationSpec(
-                        delayTimePercent = AnimationConstants.LONG_DELAY_TIME_PERCENT
+            if (currentBackStackEntry.value != null) {
+                AnimatedVisibility(
+                    visible = MainDestinations.entries.any {
+                        currentBackStackEntry.value?.destination?.route == it.route
+                    },
+                    enter = expandVertically(createAnimationSpec()),
+                    exit = shrinkVertically(
+                        animationSpec = createAnimationSpec(
+                            delayTimePercent = AnimationConstants.LONG_DELAY_TIME_PERCENT
+                        )
                     )
-                )
-            ) {
-                BottomBar(
-                    selectedItem = selectedBottomBarItem.value,
-                    onClickToItem = {
-                        if (it.destination.name != navController.currentDestination?.route) {
-                            navController.navigate(it.destination.name) {
-                                popUpTo(NavDestinations.Documents.name)
-                                launchSingleTop = true
+                ) {
+                    BottomBar(
+                        selectedItem = selectedBottomBarItem.value,
+                        onClickToItem = {
+                            if (it.destination.route != navController.currentDestination?.route) {
+                                navController.navigate(it.destination.route) {
+                                    popUpTo(MainDestinations.Documents.route)
+                                    launchSingleTop = true
+                                }
                             }
                         }
-                    }
-                )
-            }
-        },
-        snackbarHost = {
-            SnackbarHost(snackbarHostState) { data ->
-                Snackbar(
-                    dismissAction = {
-                        IconButton(
-                            onClick = data::dismiss,
-                            content = {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "Dismiss snackbar",
-                                )
-                            }
-                        )
-                    },
-                    shape = MaterialTheme.shapes.medium,
-                    containerColor = MaterialTheme.colorScheme.background.reversed,
-                    contentColor = MaterialTheme.colorScheme.onBackground.reversed,
-                    dismissActionContentColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = data.visuals.message,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+        },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { TwoRowsSnackbar(it) }
         },
         contentWindowInsets = WindowInsets(0),
         modifier = modifier.fillMaxSize(),
@@ -168,13 +142,13 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
             CompositionLocalProvider(LocalBottomNavigationBarHeight provides contentPadding.calculateBottomPadding()) {
                 NavHost(
                     navController = navController,
-                    startDestination = NavDestinations.Entry.name,
+                    startDestination = NavDestinations.Entry.route,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxSize()
                 ) {
                     composable(
-                        route = NavDestinations.Entry.name,
+                        route = NavDestinations.Entry.route,
                         enterTransition = { fadeIn(createAnimationSpec()) },
                         exitTransition = {
                             fadeOut(
@@ -186,11 +160,12 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
                     ) {
                         EntryScreen(
                             navigateToMainScreen = {
-                                navController.navigate(NavDestinations.Main.name) {
-                                    popUpTo(route = NavDestinations.Entry.name) {
+                                navController.navigate(NavDestinations.Main.route) {
+                                    popUpTo(route = NavDestinations.Entry.route) {
                                         inclusive = true
                                     }
                                     launchSingleTop = true
+                                    restoreState = true
                                 }
                             },
                             showSnackbar = {
@@ -202,11 +177,11 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
 
 
                     navigation(
-                        route = NavDestinations.Main.name,
-                        startDestination = NavDestinations.Documents.name
+                        route = NavDestinations.Main.route,
+                        startDestination = MainDestinations.Documents.route
                     ) {
                         composable(
-                            route = NavDestinations.Documents.name,
+                            route = MainDestinations.Documents.route,
                             enterTransition = {
                                 enterScreenTransition(
                                     AbsoluteAlignment.Left as BiasAbsoluteAlignment.Horizontal
@@ -227,17 +202,17 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
                         }
 
                         composable(
-                            route = NavDestinations.Rooms.name,
+                            route = MainDestinations.Rooms.route,
                             enterTransition = {
                                 val expandFrom = when (initialState.destination.route) {
-                                    NavDestinations.Documents.name -> AbsoluteAlignment.Right
+                                    MainDestinations.Documents.route -> AbsoluteAlignment.Right
                                     else -> AbsoluteAlignment.Left
                                 }
                                 enterScreenTransition(expandFrom as BiasAbsoluteAlignment.Horizontal)
                             },
                             exitTransition = {
                                 val shrinkTowards = when (targetState.destination.route) {
-                                    NavDestinations.Documents.name -> AbsoluteAlignment.Right
+                                    MainDestinations.Documents.route -> AbsoluteAlignment.Right
                                     else -> AbsoluteAlignment.Left
                                 }
                                 exitScreenTransition(shrinkTowards as BiasAbsoluteAlignment.Horizontal)
@@ -252,17 +227,17 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
                         }
 
                         composable(
-                            route = NavDestinations.Trash.name,
+                            route = MainDestinations.Trash.route,
                             enterTransition = {
                                 val expandFrom = when (initialState.destination.route) {
-                                    NavDestinations.Trash.name -> AbsoluteAlignment.Left
+                                    MainDestinations.Trash.route -> AbsoluteAlignment.Left
                                     else -> AbsoluteAlignment.Right
                                 }
                                 enterScreenTransition(expandFrom as BiasAbsoluteAlignment.Horizontal)
                             },
                             exitTransition = {
                                 val shrinkTowards = when (targetState.destination.route) {
-                                    NavDestinations.Trash.name -> AbsoluteAlignment.Left
+                                    MainDestinations.Trash.route -> AbsoluteAlignment.Left
                                     else -> AbsoluteAlignment.Right
                                 }
                                 exitScreenTransition(shrinkTowards as BiasAbsoluteAlignment.Horizontal)
@@ -277,7 +252,7 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
                         }
 
                         composable(
-                            route = NavDestinations.Profile.name,
+                            route = MainDestinations.Profile.route,
                             enterTransition = {
                                 enterScreenTransition(
                                     AbsoluteAlignment.Right as BiasAbsoluteAlignment.Horizontal
@@ -291,8 +266,8 @@ fun NavigationScreen(modifier: Modifier = Modifier) {
                         ) {
                             ProfileScreen(
                                 navigateToEntryScreen = {
-                                    navController.navigate(NavDestinations.Entry.name) {
-                                        popUpTo(route = NavDestinations.Main.name) {
+                                    navController.navigate(NavDestinations.Entry.route) {
+                                        popUpTo(route = NavDestinations.Main.route) {
                                             inclusive = true
                                         }
                                         launchSingleTop = true
@@ -318,34 +293,34 @@ private sealed class BottomBarItem(
     val selectedIcon: ImageVector,
     val defaultIcon: ImageVector,
     val text: (Context) -> String,
-    val destination: NavDestinations
+    val destination: MainDestinations
 ) {
     data object Documents : BottomBarItem(
         selectedIcon = Icons.Rounded.Description,
         defaultIcon = Icons.Outlined.Description,
         text = { it.getString(R.string.documents_title) },
-        destination = NavDestinations.Documents
+        destination = MainDestinations.Documents
     )
 
     data object Rooms : BottomBarItem(
         selectedIcon = Icons.Rounded.Dataset,
         defaultIcon = Icons.Outlined.Dataset,
         text = { it.getString(R.string.rooms_title) },
-        destination = NavDestinations.Rooms
+        destination = MainDestinations.Rooms
     )
 
     data object Trash : BottomBarItem(
         selectedIcon = Icons.Rounded.Delete,
         defaultIcon = Icons.Outlined.Delete,
         text = { it.getString(R.string.trash_title) },
-        destination = NavDestinations.Trash
+        destination = MainDestinations.Trash
     )
 
     data object Profile : BottomBarItem(
         selectedIcon = Icons.Rounded.AccountCircle,
         defaultIcon = Icons.Outlined.AccountCircle,
         text = { it.getString(R.string.profile_title) },
-        destination = NavDestinations.Profile
+        destination = MainDestinations.Profile
     )
 }
 

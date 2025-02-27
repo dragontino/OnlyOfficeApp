@@ -64,10 +64,6 @@ class RoomsViewModel(
         }
     }
 
-    fun openFile(file: File) {
-        messageChannel.trySend("Trying open file ${file.title}")
-    }
-
 
     private suspend fun openFolder(id: Int) {
         isLoading = true

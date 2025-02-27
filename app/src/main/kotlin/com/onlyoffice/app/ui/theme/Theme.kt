@@ -10,6 +10,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.onlyoffice.app.util.inverse
 
 private val DarkColorScheme = darkColorScheme(
     primary = Raspberry,
@@ -19,7 +20,8 @@ private val DarkColorScheme = darkColorScheme(
     secondary = Color(0xFFFFC107),
     onSecondary = DarkerGray,
     surface = Color(0xFF1E1E1E),
-    onSurface = Color.White
+    onSurface = Color.White,
+    inversePrimary = Raspberry.inverse
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -30,7 +32,8 @@ private val LightColorScheme = lightColorScheme(
     secondary = Color(0xFFFFC107),
     onSecondary = DarkerGray,
     surface = Color(0xFFF5F5F5),
-    onSurface = DarkerGray
+    onSurface = DarkerGray,
+    inversePrimary = Raspberry.inverse
 )
 
 @Composable

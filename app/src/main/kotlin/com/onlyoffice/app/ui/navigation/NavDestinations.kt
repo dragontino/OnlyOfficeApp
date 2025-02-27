@@ -5,9 +5,18 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class NavDestinations {
     Entry,
-    Main,
+    Main;
+
+    val route: String get() = name
+}
+
+
+@Serializable
+enum class MainDestinations {
     Documents,
     Rooms,
     Trash,
-    Profile,
+    Profile;
+
+    val route: String get() = name
 }
